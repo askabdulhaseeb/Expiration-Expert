@@ -1,9 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../model/app_user.dart';
+import '../utilities/custom_toast.dart';
 import 'user_firebase_api.dart';
-import '../../model/app_user.dart';
-import '../../utilities/custom_toast.dart';
-
 import 'user_local_data.dart';
 
 class AuthMethod {
@@ -14,10 +13,8 @@ class AuthMethod {
   }
 
   Future<User?> signupWithEmailAndPassword({
-    required String name,
     required String email,
     required String password,
-    required String phoneNumber,
   }) async {
     try {
       final UserCredential result = await _auth

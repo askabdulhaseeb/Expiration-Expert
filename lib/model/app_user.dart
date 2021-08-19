@@ -18,10 +18,10 @@ class AppUser {
     );
   }
 
-  final String uid;
+  String uid;
   final String email;
   final String displayName;
-  final String imageURL;
+  String imageURL;
   final String type;
 
   Map<String, dynamic> toMap() {

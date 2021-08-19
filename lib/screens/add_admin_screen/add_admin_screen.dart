@@ -1,5 +1,13 @@
 import 'dart:io';
 
+import 'package:expiration_expert_admin/database/auth.dart';
+import 'package:expiration_expert_admin/database/user_firebase_api.dart';
+import 'package:expiration_expert_admin/model/app_user.dart';
+import 'package:expiration_expert_admin/screens/home_screen/home_screen.dart';
+import 'package:expiration_expert_admin/screens/widgets/custom_textformfield.dart';
+import 'package:expiration_expert_admin/screens/widgets/show_loading.dart';
+import 'package:expiration_expert_admin/utilities/custom_validator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,11 +21,11 @@ class AddAdminScreen extends StatefulWidget {
 }
 
 class _AddAdminScreenState extends State<AddAdminScreen> {
+  final GlobalKey<FormState> _key = GlobalKey<FormState>();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
   final TextEditingController _name = TextEditingController();
   XFile? _image;
-  File? file;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,22 +34,68 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: Utilities.padding),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
-            // _pickImageWidget(),
-            SizedBox(height: 30),
-            Text(
-              'Remaining Part Will Show When you place you Order',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w300),
-            ),
-            Text(
-              'Thanks :)',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            )
-          ],
+        child: Form(
+          key: _key,
+          child: ListView(
+            children: <Widget>[
+              const SizedBox(height: 10),
+              _pickImageWidget(),
+              const SizedBox(height: 30),
+              CustomTextFormField(
+                title: 'Name',
+                controller: _name,
+                validator: (String? value) => CustomValidator.lessThen3(value),
+              ),
+              CustomTextFormField(
+                title: 'Email',
+                hint: 'test@test.com',
+                controller: _email,
+                validator: (String? value) => CustomValidator.email(value),
+              ),
+              CustomTextFormField(
+                title: 'Password',
+                isPassword: true,
+                controller: _password,
+                validator: (String? value) => CustomValidator.password(value),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_key.currentState!.validate()) {
+                    showLoadingDislog(context);
+                    User? _user = await AuthMethod().signupWithEmailAndPassword(
+                        email: _email.text, password: _password.text);
+                    if (_user != null) {
+                      String? url = '';
+                      if (_image != null) {
+                        url = await UserFirebaseAPI().uploadImage(
+                          File(_image!.path),
+                          _user.uid,
+                        );
+                      }
+                      AppUser appUser = AppUser(
+                        uid: _user.uid,
+                        email: _email.text,
+                        displayName: _name.text,
+                        imageURL: url ?? '',
+                        type: 'admin',
+                      );
+                      await UserFirebaseAPI().addUser(user: appUser);
+                      if (!mounted) return;
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        HomeScreen.routeName,
+                        (Route<dynamic> route) => false,
+                      );
+                    }
+                  }
+                  if (!mounted) return;
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Save'),
+              ),
+              SizedBox(height: MediaQuery.of(context).size.width / 2),
+            ],
+          ),
         ),
       ),
     );
